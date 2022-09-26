@@ -19,10 +19,13 @@ VueAMap.initAMapApiLoader({
     'AMap.MapType',
     'AMap.PolyEditor',
     'AMap.CircleEditor',
-    'Geocoder'
+    'AMap.Geocoder',
+    'AMap.Geolocation',
+    'AMap.InfoWindow',
+    'AMap.Marker'
   ],
   // 高德 sdk 版本，默认为 1.4.4
-  v: '2.0'
+  v: '1.4.4'
 });
 
 Vue.config.productionTip = false;
