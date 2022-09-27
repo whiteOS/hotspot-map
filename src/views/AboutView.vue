@@ -105,6 +105,7 @@
     },
     created() {
       this.init();
+      console.log('初始化');
     }
   };
 </script>
