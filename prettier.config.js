@@ -15,5 +15,5 @@ module.exports = {
   proseWrap: 'never',
   htmlWhitespaceSensitivity: 'strict',
   vueIndentScriptAndStyle: true,
-  endOfLine: 'lf'
+  endOfLine: 'crlf'
 };
