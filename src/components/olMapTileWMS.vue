@@ -60,7 +60,12 @@
           }
 
           locate() {
-            this.getMap().getView().setCenter(that.geolocation.getPosition());
+            this.getMap()
+              .getView()
+              .animate(
+                { center: that.geolocation.getPosition() },
+                { zoom: 15 }
+              );
           }
         }
 
