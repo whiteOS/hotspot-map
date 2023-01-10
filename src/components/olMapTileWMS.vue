@@ -1,8 +1,6 @@
 <template>
   <div>
-    <div id="map" class="map"></div>
-    <div id="info"></div>
-    <p> 定位精度 : <code id="accuracy"></code> </p>
+    <div id="map" class="map"> </div>
   </div>
 </template>
 
@@ -14,7 +12,7 @@
   import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
   import { TileWMS } from 'ol/source';
   import Geolocation from 'ol/Geolocation';
-
+  import { Control, defaults as defaultControls } from 'ol/control.js';
   import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
   import Feature from 'ol/Feature';
   import Point from 'ol/geom/Point';
@@ -23,67 +21,109 @@
   export default {
     name: 'olMapImageWMS',
     data() {
-      return {};
+      return {
+        map: null,
+        geolocation: null,
+        accuracyFeature: null,
+        positionFeature: null
+      };
     },
     mounted() {
       this.initMap();
     },
     methods: {
+      // 初始化
       initMap() {
-        var layer = new TileLayer({
-          source: new TileWMS({
-            //不能设置为0，否则地图不展示。
-            ratio: 1,
-            url: 'https://10.126.148.112:8443/geoserver/hunan/wms',
-            params: {
-              LAYERS: 'hunan:osm',
-              STYLES: '',
-              VERSION: '1.1.1',
-              TRANSPARENT: true,
-              FORMAT: 'image/png8',
-              FORMAT_OPTIONS: 'antialias:full',
-              exceptions: 'application/vnd.ogc.se_inimage'
-              // tiled: false
-            },
-            serverType: 'geoserver'
-          })
-        });
-        const view = new View({
-          projection: 'EPSG:4326', //坐标系类型
-          //地图中心点
-          center: [113.01015103962031, 28.070729213584386],
-          zoom: 16
-        });
-        const map = new Map({
+        const that = this;
+
+        // 定位控件
+        class Locate extends Control {
+          /**
+           * @param {Object} [opt_options] Control options.
+           */
+          constructor(opt_options) {
+            const options = opt_options || {};
+
+            const button = document.createElement('button');
+            button.innerHTML = '⚪';
+
+            const element = document.createElement('div');
+            element.className = 'ol-attribution ol-unselectable ol-control';
+            element.appendChild(button);
+
+            super({
+              element: element,
+              target: options.target
+            });
+
+            button.addEventListener('click', this.locate.bind(this), false);
+          }
+
+          locate() {
+            this.getMap().getView().setCenter(that.geolocation.getPosition());
+          }
+        }
+
+        // 初始化地图
+        that.map = new Map({
           //地图容器ID
           target: 'map',
+          // 控件
+          controls: defaultControls().extend([new Locate()]),
           //引入地图
-          layers: [layer],
-          view: view
+          layers: [
+            new TileLayer({
+              source: new TileWMS({
+                //不能设置为0，否则地图不展示。
+                ratio: 1,
+                url: 'http://lookmap.csust.edu.cn/geoserver/hunan/wms',
+                params: {
+                  LAYERS: 'hunan',
+                  STYLES: '',
+                  VERSION: '1.1.1',
+                  TRANSPARENT: true,
+                  FORMAT: 'image/png8',
+                  FORMAT_OPTIONS: 'antialias:full',
+                  exceptions: 'application/vnd.ogc.se_inimage'
+                  // tiled: false
+                },
+                serverType: 'geoserver'
+              })
+            })
+          ],
+          view: new View({
+            projection: 'EPSG:3857', //坐标系类型
+            center: [12579389.92703, 3257754.13451],
+            zoom: 16
+          })
         });
-        const geolocation = new Geolocation({
+        // 定位功能
+        that.geolocation = new Geolocation({
           // enableHighAccuracy must be set to true to have the heading value.
           trackingOptions: {
             enableHighAccuracy: true
           },
-          projection: view.getProjection()
+          projection: this.map.getView().getProjection()
         });
-        geolocation.setTracking(true);
-        geolocation.on('change', function () {
-          document.getElementById('accuracy').innerText =
-            geolocation.getAccuracy() + ' [m]';
+        // 开启实时定位
+        that.geolocation.setTracking(true);
+        // 实时定位显示定位精度
+        that.geolocation.on('change', function () {
+          console.log(that.geolocation.getAccuracy() + ' [m]');
         });
-        geolocation.on('error', function (error) {
-          const info = document.getElementById('info');
-          info.innerHTML = error.message;
-          info.style.display = '';
+        // 定位错误信息输出到控制台
+        that.geolocation.on('error', function (error) {
+          console.log(error.message);
         });
-        const accuracyFeature = new Feature();
-        geolocation.on('change:accuracyGeometry', function () {
-          accuracyFeature.setGeometry(geolocation.getAccuracyGeometry());
+        // 显示定位范围
+        that.accuracyFeature = new Feature();
+        that.geolocation.on('change:accuracyGeometry', function () {
+          that.accuracyFeature.setGeometry(
+            that.geolocation.getAccuracyGeometry()
+          );
         });
-        const positionFeature = new Feature();
-        positionFeature.setStyle(
+        that.positionFeature = new Feature();
+        that.positionFeature.setStyle(
           new Style({
             image: new CircleStyle({
               radius: 6,
@@ -97,20 +137,20 @@
             })
           })
         );
-        geolocation.on('change:position', function () {
-          const coordinates = geolocation.getPosition();
-          positionFeature.setGeometry(
+        that.geolocation.on('change:position', function () {
+          const coordinates = that.geolocation.getPosition();
+          that.positionFeature.setGeometry(
             coordinates ? new Point(coordinates) : null
           );
           console.log(coordinates);
-          view.setCenter(coordinates);
         });
         new VectorLayer({
-          map: map,
+          map: that.map,
           source: new VectorSource({
-            features: [accuracyFeature, positionFeature]
+            features: [that.accuracyFeature, that.positionFeature]
           })
         });
+        console.log('init completed');
       }
     }
   };
