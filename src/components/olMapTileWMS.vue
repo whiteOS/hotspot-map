@@ -9,14 +9,13 @@
   import 'ol/ol.css';
   import Map from 'ol/Map';
   import View from 'ol/View';
-  import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
-  import { TileWMS } from 'ol/source';
-  import Geolocation from 'ol/Geolocation';
-  import { Control, defaults as defaultControls } from 'ol/control.js';
-  import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
   import Feature from 'ol/Feature';
   import Point from 'ol/geom/Point';
-  import { Vector as VectorSource } from 'ol/source';
+  import Geolocation from 'ol/Geolocation';
+  import { Tile as TileLayer, Vector as VectorLayer } from 'ol/layer';
+  import { Control, defaults as defaultControls } from 'ol/control.js';
+  import { Circle as CircleStyle, Fill, Stroke, Style } from 'ol/style';
+  import { TileWMS, Vector as VectorSource } from 'ol/source';
 
   export default {
     name: 'olMapImageWMS',
@@ -154,6 +153,9 @@
           source: new VectorSource({
             features: [that.accuracyFeature, that.positionFeature]
           })
+        });
+        that.map.getView().on('change:resolution', () => {
+          console.log(that.map.getView().getZoom());
         });
         console.log('init completed');
       }
